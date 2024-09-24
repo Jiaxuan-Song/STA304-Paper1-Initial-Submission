@@ -1,0 +1,199 @@
+---
+title: "Tracking Homelessness: A Statistical Analysis of Toronto's Shelter System Flow"
+author:
+  - Jiaxuan Song
+thanks: "The GitHub Repository containing all data, R code, and other files used in this project is located here: <https://github.com/Jiaxuan-Song/STA304-Paper1-Initial-Submission.git>"
+date: 22-09-2024
+date-format: long
+abstract: "This report is based on the Toronto Shelter System Flow dataset from Toronto Open Data, providing an in-depth analysis of how the city's homelessness services are functioning. The data offers valuable insights into the movement of people within the shelter system, helping to measure Toronto's progress in reducing homelessness. The goal of this analysis is to better understand the persistence and patterns of homelessness, ultimately providing evidence to support efforts to reduce homelessness to rare, brief, and non-recurring instances."
+format: pdf
+number-sections: true
+# The toc parameter used to create a table of contents was obtained from
+# Quarto documentation:
+# https://quarto.org/docs/reference/formats/pdf.html
+toc: true
+bibliography: references.bib
+---
+
+```{r}
+#| echo: false
+#| warning: false
+#### Preamble ####
+
+# Purpose: Generates a paper titled "Tracking Homelessness: A Statistical Analysis of Toronto's Shelter System Flow" in PDF format when
+# rendered.
+# Author: Jiaxuan Song
+# Date: September 22, 2024
+# Contact: jiaxuan.song@mail.utoronto.ca
+# Pre-requisites: Run the files "01-download_data.R" and "02-data_cleaning.R".
+```
+
+```{r}
+#| echo: false
+#| warning: false
+#### Loading Packages ####
+
+# install.packages("tidyverse")
+library(tidyverse)
+library(opendatatoronto)
+library(ggplot2)
+```
+
+# Introduction {#sec-introduction}
+
+As society continues to evolve, homelessness has become a major social challenge faced by cities around the world, including Toronto. The causes behind it are complex and multifaceted, typically involving personal, economic, social, and structural factors. Economic difficulties, such as low income, unemployment, and high housing costs, are among the primary reasons for homelessness. Additionally, personal factors such as mental health issues, substance abuse or addiction, serious illnesses, and family breakdowns also increase the risk of individuals becoming homeless [@nishio2017causes]. Chronic homelessness not only has a severe impact on an individual's physical and mental health but also places a significant burden on healthcare systems, social welfare services, and public resources. People experiencing homelessness are typically at higher risk for illness and have a lower quality of life, which further complicates their ability to escape poverty and secure stable housing [@goodman1991homelessness]. Given these challenges, addressing homelessness has become increasingly urgent.
+
+
+In response to this issue, the City of Toronto has implemented a series of measures specifically designed to support individuals experiencing homelessness. These measures include emergency shelters, respite services, and additional programs such as hotel/motel initiatives and warming centers, aimed at providing essential shelter and resources for those in need [@hwang2000mortality]. However, offering shelter alone is not enough. To better address homelessness and develop effective policies, the city tries to create an statistical system to track and manage individuals who access these services. Through this system, Toronto can not only monitor trends in homelessness in real-time but also allocate resources more accurately, helping vulnerable populations move toward long-term stability. This system provides crucial data that enables the government to tackle homelessness in a more targeted and effective manner. In the future, expanding the scope of support services, improving service quality, and collaborating with community organizations will be crucial steps in reducing homelessness [@gaetz2020making].
+
+
+# Data {#sec-data}
+
+## Overview {#sec-data-overview}
+
+In this report, the dataset used is the "Toronto Shelter System Flow" dataset from the City of Toronto Open Data platform【@citeopendatatoronto】. This dataset provides information on individuals entering and exiting the shelter system each month, including the number of unique individuals who have used the shelter system at least once in the past three months and are still considered homeless (i.e., they have not been placed in permanent housing). Additionally, this dataset is open for copying, redistribution, and use for any purpose, as long as proper credit is given, a link to the license is provided, and any modifications are indicated. 
+
+The dataset analyzed in this report contains 604 entries and 20 variables, covering homelessness-related information in Toronto. It includes details such as the date, population groups (e.g., All Population, Chronic, Refugees, Families, Youth), and various metrics like the number of individuals returning from housing, newly identified as homeless, moved to housing, or became inactive. Age categories are broken down into groups ranging from under 16 to 65 and over, along with gender distribution for males, females, and those identifying as transgender, non-binary, or Two-Spirit. 
+
+## Results {#sec-data-results}
+
+```{r}
+#| echo: false
+#| warning: false
+#| message: false
+
+#### Loading the Cleaned Dataset ####
+marriage_licence_packages <- search_packages("Toronto Shelter System Flow")
+
+# Retrieve a list of all resources (datasets) available within the found package
+marriage_licence_resources <- marriage_licence_packages %>%
+  list_package_resources()
+
+
+marriage_licence_statistics <- marriage_licence_resources[2,] %>%
+  get_resource()
+data=marriage_licence_statistics
+```
+
+After loading the dataset using the `R` programming language [@citeR], the `tidyverse` [@citetidyverse] package was used to generate graphs. In doing so, R code was adapted from @tellingstorieswithdata.
+
+\newpage
+
+
+```{r}
+#| echo: false
+#| warning: false
+#| label: fig-Actively-Homeless-Population-Group
+#| fig-cap: "Actively homeless individuals across different population groups in Toronto 2018-2024"
+
+#### First Graph ####
+
+# This code is based on knowledge from Alexander (2023).
+
+library(ggplot2)
+
+# 1. Bar plot: Population distribution by group
+ggplot(data, aes(x = population_group, y = actively_homeless)) +
+  geom_bar(stat = "identity", fill = "skyblue") +
+  theme_minimal() +
+  labs(title = "Actively Homeless by Population Group",
+       x = "Population Group",
+       y = "Number Actively Homeless") +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+```
+
+The bar chart @fig-Actively-Homeless-Population-Group illustrates the number of actively homeless individuals across different population groups in Toronto. The x-axis represents various population groups, while the y-axis shows the number of actively homeless individuals within each group. The chart clearly shows that homelessness is primarily concentrated in a few key groups: chronically homeless individuals, single adults, and non-refugees. Although vulnerable groups such as refugees, youth, and Indigenous people are also represented, their proportion is relatively small. The family group has the lowest number of actively homeless individuals.
+\newpage
+
+
+
+```{r}
+#| echo: false
+#| warning: false
+#| label: fig-Gender-Breakdown-Population-Group
+#| fig-cap: "gender breakdown of actively homeless individuals across different population groups in Toronto 2018-2024"
+
+#### Second Graph ####
+
+# This code is based on knowledge from Alexander (2023).
+
+# Preparing the necessary data to create the labels
+data_long <- data %>%
+  gather(key = "gender", value = "count", gender_male, gender_female, gender_transgender.non.binary_or_two_spirit)
+
+ggplot(data_long, aes(x = population_group, y = count, fill = gender)) +
+  geom_bar(stat = "identity", position = "dodge") +
+  theme_minimal() +
+  labs(title = "Gender Breakdown by Population Group",
+       x = "Population Group",
+       y = "Count")
+```
+
+The clustered bar chart @fig-Gender-Breakdown-Population-Group presents the gender breakdown of actively homeless individuals across various population groups in Toronto. The x-axis represents the population groups, while the y-axis shows the count of individuals. The colors in the bars indicate gender categories: dark blue for males, teal for females, and green for transgender/non-binary/two-spirit individuals. Males dominate the homeless population in most categories. Females are present in smaller numbers across all groups, but they represent a larger proportion in the Families. Transgender/non-binary/two-spirit individuals make up a very small portion of the homeless population across all groups.
+
+\newpage
+
+
+# Adding the labels to the first known cause data table
+first_known_cause_data <- first_known_cause_data |>
+  mutate(`Label` = first_known_cause_data_labels)
+```
+
+```{r}
+#| echo: false
+#| warning: false
+#| label: fig-Age-Distribution-Population-Group
+#| fig-cap: "age-distribution of actively homepless individuals across different population groups in Toronto 2018-2024"
+
+#### Third Graph ####
+
+# This code is based on knowledge from Alexander (2023).
+
+age_data <- data %>%
+  select(population_group, ageunder16, age16.24, age25.34, age35.44, age45.54, age55.64, age65over) %>%
+  gather(key = "age_group", value = "count", ageunder16:age65over)
+
+# Plotting the dodged bar plot
+ggplot(age_data, aes(x = population_group, y = count, fill = age_group)) +
+  geom_bar(stat = "identity", position = "dodge") +
+  theme_minimal() +
+  labs(title = "Age Distribution by Population Group",
+       x = "Population Group",
+       y = "Count") +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+```
+
+The Dodged Bar Plot @fig-Age-Distribution-Population-Group shows the age distribution across different population groups. The x-axis lists several population groups. The y-axis indicates the count or number of individuals within each age group.Families and Youth groups are predominantly represented by younger individuals, with the ageunder16 and age16.24 groups being the most prominent.
+Chronic and Single Adult groups exhibit a more balanced distribution across the middle age groups, with a noticeable presence in the age35.44 and age45.54 categories. Refugees and Indigenous groups display smaller counts overall but show a broader distribution across various age categories.
+
+# Discussion {#sec-discussion}
+
+The study had conducted an in-depth analysis of the composition of Toronto’s homeless population, focusing on homelessness across different demographic groups. Through the analysis of various population categories—such as chronically homeless individuals, refugees, families, youth, and single adults—we found that chronically homeless individuals and single adults make up a significant portion of the homeless population, highlighting the systemic challenges these groups face [@aubry2012comparing]. Additionally, the gender and age distribution revealed disparities within the homeless population. For example, males dominate across all groups, while females and youth are more concentrated in the refugee and family categories. These findings underscore the complexity of homelessness and not only enhance our understanding of the homeless population but also provide critical data to support future policy interventions [@spetter1996government].
+
+Our findings align with previous research [@nishio2017causes], confirming that chronically homeless individuals, due to a lack of stable social support and housing opportunities, often remain in long-term homelessness. This trend is particularly evident in the single adult group, who frequently lack family support and face more severe economic and mental health challenges. Furthermore, the higher proportion of females in the refugee and family groups may be due to the fact that these groups are more likely to consist of family units, which face unique challenges in adapting to new environments and accessing resources.
+
+At the same time, youth homelessness highlights the vulnerability of this group during the transition into adulthood. Without adequate employment and educational opportunities, they are at higher risk of falling into a cycle of homelessness. The underreporting of gender minorities, such as transgender and non-binary individuals, may be related to systemic recording deficiencies, reflecting the “invisibility” [@norris2021unreal] of these groups within the homeless population and suggesting the need for greater attention and data collection in the future.
+
+While this study provides valuable insights into Toronto’s homeless population, it also has several limitations. First, the study only includes individuals who used overnight services, excluding those who sleep outdoors or use other non-municipally funded services, potentially underestimating the total number of homeless individuals. Second, the proportion of gender minorities in the data is low, indicating that these groups may be systematically overlooked or underreported within the homeless population. Additionally, the time range of the study limits our ability to analyze long-term trends, preventing us from fully understanding how homelessness evolves over time and across different spatial contexts. Finally, the study relied solely on municipal data, possibly missing key subgroups such as migrant or informal populations.
+
+\newpage
+
+\appendix
+
+# Appendix {#sec-appendix}
+
+## Dataset and Graph Sketches {#sec-appendix-sketches}
+
+Sketches depicting both the desired dataset and the graphs generated in this analysis are available in the GitHub Repository.
+
+## Data Cleaning {#sec-appendix-cleaning}
+
+The data cleaning process involved filtering out some of the columns from the raw dataset and renaming some of the data entries for clarity and simplicity.
+
+## Attribution Statement {#sec-appendix-attribution}
+
+"Contains information licensed under the Open Data - City of Toronto [@citeopendatatoronto].
+
+\newpage
+
+# References {#sec-references}
